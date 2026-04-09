@@ -3,6 +3,12 @@ import { z } from "zod";
 import { generateText } from "../llm/client.js";
 import { ADOPT_SYSTEM_PROMPT, buildAdoptPrompt } from "../prompts/adopt.js";
 
+const repoContextSchema = z.object({
+  framework: z.string().optional(),
+  tokens: z.string().optional(),
+  root: z.string().optional(),
+}).optional();
+
 export function registerAdopt(server: McpServer): void {
   server.tool(
     "adopt",
@@ -12,10 +18,7 @@ export function registerAdopt(server: McpServer): void {
       framework: z
         .enum(["react", "vue", "nextjs", "svelte"])
         .describe("Target framework"),
-      repo_context: z
-        .string()
-        .optional()
-        .describe("Optional context about the repository structure"),
+      repo_context: repoContextSchema,
     },
     async ({ html, framework, repo_context }) => {
       const userPrompt = buildAdoptPrompt(html, framework, repo_context);

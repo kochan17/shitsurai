@@ -3,7 +3,7 @@ import { z } from "zod";
 import { renderToImage } from "../renderer/playwright.js";
 
 const VIEWPORT_SIZES = {
-  desktop: { width: 1280, height: 800 },
+  desktop: { width: 1440, height: 900 },
   mobile: { width: 390, height: 844 },
 } as const;
 

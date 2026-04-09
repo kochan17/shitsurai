@@ -18,25 +18,43 @@ export const GENERATE_SYSTEM_PROMPT = `You are an expert UI system designer spec
 - The UI must be fully functional and visually polished
 - Do NOT include markdown fences or explanations — output raw HTML only`;
 
+interface RepoContext {
+  framework?: string;
+  tokens?: string;
+  root?: string;
+}
+
 export function buildGeneratePrompt(
   prompt: string,
-  repoContext: string | undefined,
-  viewportWidth: number
+  repoContext: RepoContext | undefined,
+  viewportWidth: number,
+  referenceContext?: string
 ): string {
   const viewportInstruction =
     viewportWidth <= 390
       ? `Target mobile viewport: ${viewportWidth}px wide. Use responsive mobile-first layout.`
       : `Target desktop viewport: ${viewportWidth}px wide. Use full-width desktop layout.`;
 
-  const contextSection = repoContext
-    ? `\n\n## Repository Context\n${repoContext}`
+  let contextSection = "";
+  if (repoContext) {
+    const lines: string[] = [];
+    if (repoContext.framework !== undefined) lines.push(`- Framework: ${repoContext.framework}`);
+    if (repoContext.tokens !== undefined) lines.push(`- Design Tokens: ${repoContext.tokens}`);
+    if (repoContext.root !== undefined) lines.push(`- Root: ${repoContext.root}`);
+    if (lines.length > 0) {
+      contextSection = `\n\n## Repository Context\n${lines.join("\n")}`;
+    }
+  }
+
+  const referenceSection = referenceContext
+    ? `\n\n## Reference\n${referenceContext}`
     : "";
 
   return `## Design Request
 ${prompt}
 
 ## Viewport
-${viewportInstruction}${contextSection}
+${viewportInstruction}${contextSection}${referenceSection}
 
 Generate a complete HTML file for this UI.`;
 }

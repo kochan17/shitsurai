@@ -13,14 +13,27 @@ Provide a Markdown document with:
 
 Be concise and practical. Assume the developer is experienced with the target framework.`;
 
+interface RepoContext {
+  framework?: string;
+  tokens?: string;
+  root?: string;
+}
+
 export function buildAdoptPrompt(
   html: string,
   framework: string,
-  repoContext: string | undefined
+  repoContext: RepoContext | undefined
 ): string {
-  const contextSection = repoContext
-    ? `\n\n## Repository Context\n${repoContext}`
-    : "";
+  let contextSection = "";
+  if (repoContext) {
+    const lines: string[] = [];
+    if (repoContext.framework !== undefined) lines.push(`- Framework: ${repoContext.framework}`);
+    if (repoContext.tokens !== undefined) lines.push(`- Design Tokens: ${repoContext.tokens}`);
+    if (repoContext.root !== undefined) lines.push(`- Root: ${repoContext.root}`);
+    if (lines.length > 0) {
+      contextSection = `\n\n## Repository Context\n${lines.join("\n")}`;
+    }
+  }
 
   return `## HTML Prototype
 ${html}

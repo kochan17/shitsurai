@@ -11,15 +11,38 @@ export const REFINE_SYSTEM_PROMPT = `You are an expert UI system designer refini
 - Output a COMPLETE, valid HTML file starting with <!DOCTYPE html> and ending with </html>
 - Do NOT include markdown fences or explanations — output raw HTML only`;
 
+interface RepoContext {
+  framework?: string;
+  tokens?: string;
+  root?: string;
+}
+
 export function buildRefinePrompt(
   html: string,
   feedback: string,
-  viewportWidth: number
+  viewportWidth: number,
+  repoContext?: RepoContext,
+  referenceContext?: string
 ): string {
   const viewportInstruction =
     viewportWidth <= 390
       ? `Target mobile viewport: ${viewportWidth}px wide.`
       : `Target desktop viewport: ${viewportWidth}px wide.`;
+
+  let contextSection = "";
+  if (repoContext) {
+    const lines: string[] = [];
+    if (repoContext.framework !== undefined) lines.push(`- Framework: ${repoContext.framework}`);
+    if (repoContext.tokens !== undefined) lines.push(`- Design Tokens: ${repoContext.tokens}`);
+    if (repoContext.root !== undefined) lines.push(`- Root: ${repoContext.root}`);
+    if (lines.length > 0) {
+      contextSection = `\n\n## Repository Context\n${lines.join("\n")}`;
+    }
+  }
+
+  const referenceSection = referenceContext
+    ? `\n\n## Reference\n${referenceContext}`
+    : "";
 
   return `## Current HTML
 ${html}
@@ -28,7 +51,7 @@ ${html}
 ${feedback}
 
 ## Viewport
-${viewportInstruction}
+${viewportInstruction}${contextSection}${referenceSection}
 
 Refine the HTML based on the feedback above. Return the complete updated HTML file.`;
 }

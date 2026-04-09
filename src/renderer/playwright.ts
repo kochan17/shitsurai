@@ -8,7 +8,7 @@ interface RenderOptions {
 
 let browserInstance: Browser | null = null;
 
-async function getBrowser(): Promise<Browser> {
+export async function getBrowser(): Promise<Browser> {
   if (!browserInstance) {
     browserInstance = await chromium.launch({ headless: true });
   }
