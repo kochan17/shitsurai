@@ -22,18 +22,15 @@ interface RepoContext {
 export function buildAdoptPrompt(
   html: string,
   framework: string,
-  repoContext: RepoContext | undefined
+  repoContext: RepoContext
 ): string {
-  let contextSection = "";
-  if (repoContext) {
-    const lines: string[] = [];
-    if (repoContext.framework !== undefined) lines.push(`- Framework: ${repoContext.framework}`);
-    if (repoContext.tokens !== undefined) lines.push(`- Design Tokens: ${repoContext.tokens}`);
-    if (repoContext.root !== undefined) lines.push(`- Root: ${repoContext.root}`);
-    if (lines.length > 0) {
-      contextSection = `\n\n## Repository Context\n${lines.join("\n")}`;
-    }
-  }
+  const contextLines: string[] = [];
+  if (repoContext.framework !== undefined) contextLines.push(`- Framework: ${repoContext.framework}`);
+  if (repoContext.tokens !== undefined) contextLines.push(`- Design Tokens: ${repoContext.tokens}`);
+  if (repoContext.root !== undefined) contextLines.push(`- Root: ${repoContext.root}`);
+  const contextSection = contextLines.length > 0
+    ? `\n\n## Repository Context\n${contextLines.join("\n")}`
+    : "";
 
   return `## HTML Prototype
 ${html}

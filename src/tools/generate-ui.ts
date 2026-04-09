@@ -10,11 +10,13 @@ const VIEWPORT_WIDTH = {
   mobile: 390,
 } as const;
 
-const repoContextSchema = z.object({
-  framework: z.string().optional(),
-  tokens: z.string().optional(),
-  root: z.string().optional(),
-}).optional();
+const repoContextSchema = z
+  .object({
+    framework: z.string().optional(),
+    tokens: z.string().optional(),
+    root: z.string().optional(),
+  })
+  .describe("Repository summary: framework, tokens, root");
 
 export function registerGenerateDesign(server: McpServer): void {
   server.tool(
@@ -56,11 +58,10 @@ export function registerGenerateDesign(server: McpServer): void {
       const userPrompt = buildGeneratePrompt(prompt, repo_context, viewportWidth, referenceContext);
       const html = await generateHTML(GENERATE_SYSTEM_PROMPT, userPrompt);
 
-      const run_id = saveRun(html, viewport);
-      const created_at = new Date().toISOString();
+      const { runId: run_id, createdAt: created_at } = saveRun({ html, viewport, prompt, repoContext: repo_context, mode, url });
 
       return {
-        content: [{ type: "text", text: JSON.stringify({ html, run_id, created_at }, null, 2) }],
+        content: [{ type: "text", text: JSON.stringify({ html, run_id, viewport, created_at }, null, 2) }],
       };
     }
   );

@@ -10,17 +10,19 @@ const VIEWPORT_WIDTH = {
   mobile: 390,
 } as const;
 
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const RUN_ID_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-[a-z0-9-]+$/;
 
 function isRunId(value: string): boolean {
-  return UUID_REGEX.test(value);
+  return RUN_ID_PATTERN.test(value.trim());
 }
 
-const repoContextSchema = z.object({
-  framework: z.string().optional(),
-  tokens: z.string().optional(),
-  root: z.string().optional(),
-}).optional();
+const repoContextSchema = z
+  .object({
+    framework: z.string().optional(),
+    tokens: z.string().optional(),
+    root: z.string().optional(),
+  })
+  .describe("Repository summary: framework, tokens, root");
 
 export function registerRefineDesign(server: McpServer): void {
   server.tool(
@@ -77,11 +79,10 @@ export function registerRefineDesign(server: McpServer): void {
       const userPrompt = buildRefinePrompt(html, feedback, viewportWidth, repo_context, referenceContext);
       const refinedHtml = await generateHTML(REFINE_SYSTEM_PROMPT, userPrompt);
 
-      const run_id = saveRun(refinedHtml, viewport);
-      const created_at = new Date().toISOString();
+      const { runId: run_id, createdAt: created_at } = saveRun({ html: refinedHtml, viewport, prompt: feedback, repoContext: repo_context, mode, url });
 
       return {
-        content: [{ type: "text", text: JSON.stringify({ html: refinedHtml, run_id, created_at }, null, 2) }],
+        content: [{ type: "text", text: JSON.stringify({ html: refinedHtml, run_id, viewport, created_at }, null, 2) }],
       };
     }
   );

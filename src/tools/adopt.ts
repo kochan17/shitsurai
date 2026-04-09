@@ -3,11 +3,13 @@ import { z } from "zod";
 import { generateText } from "../llm/client.js";
 import { ADOPT_SYSTEM_PROMPT, buildAdoptPrompt } from "../prompts/adopt.js";
 
-const repoContextSchema = z.object({
-  framework: z.string().optional(),
-  tokens: z.string().optional(),
-  root: z.string().optional(),
-}).optional();
+const repoContextSchema = z
+  .object({
+    framework: z.string().optional(),
+    tokens: z.string().optional(),
+    root: z.string().optional(),
+  })
+  .describe("Repository summary: framework, tokens, root");
 
 export function registerAdopt(server: McpServer): void {
   server.tool(
