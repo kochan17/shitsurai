@@ -1,7 +1,7 @@
 {
   "name": "shitsurai",
   "version": "0.1.0",
-  "description": "Self-hosted design generation MCP server using Claude API",
+  "description": "Self-hosted AIDesigner clone — MCP server for generating UI designs with Claude API, with preview, refinement, and framework adoption",
   "type": "module",
   "main": "./dist/index.js",
   "bin": {
@@ -9,14 +9,42 @@
     "shitsurai-server": "./dist/index.js"
   },
   "files": [
-    "dist"
+    "dist",
+    ".claude/skills/shitsurai/SKILL.md",
+    "README.md",
+    "LICENSE"
   ],
   "engines": {
     "node": ">=20.10.0"
   },
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch"
+    "dev": "tsc --watch",
+    "prepublishOnly": "npm run build",
+    "postinstall": "node -e \"try { require('child_process').execSync('npx playwright install chromium', { stdio: 'inherit' }) } catch (e) { console.error('Warning: Failed to install Playwright Chromium. Run: npx playwright install chromium') }\""
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "claude",
+    "anthropic",
+    "ui",
+    "design",
+    "generator",
+    "aidesigner",
+    "tailwind",
+    "html",
+    "prototyping"
+  ],
+  "author": "kochan17",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kochan17/shitsurai.git"
+  },
+  "homepage": "https://github.com/kochan17/shitsurai#readme",
+  "bugs": {
+    "url": "https://github.com/kochan17/shitsurai/issues"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
