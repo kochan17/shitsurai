@@ -5,8 +5,8 @@
   "type": "module",
   "main": "./dist/index.js",
   "bin": {
-    "shitsurai": "./dist/cli.js",
-    "shitsurai-server": "./dist/index.js"
+    "shitsurai": "dist/cli.js",
+    "shitsurai-server": "dist/index.js"
   },
   "files": [
     "dist",
