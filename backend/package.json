@@ -1,0 +1,23 @@
+{
+  "name": "shitsurai-backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:migrate:local": "wrangler d1 migrations apply shitsurai --local",
+    "db:migrate:remote": "wrangler d1 migrations apply shitsurai --remote",
+    "db:setup-test-user": "node scripts/setup-test-user.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "hono": "^4.6.0",
+    "stripe": "^17.0.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250101.0",
+    "typescript": "^5.8.3",
+    "wrangler": "^3.90.0"
+  }
+}

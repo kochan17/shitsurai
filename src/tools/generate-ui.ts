@@ -1,6 +1,8 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { generateHTML } from "../llm/client.js";
+import { hostedGenerateDesign } from "../llm/hosted-client.js";
+import { isHostedMode } from "../auth/token-store.js";
 import { GENERATE_SYSTEM_PROMPT, buildGeneratePrompt } from "../prompts/generate.js";
 import { scrapeUrl } from "../scraper/url-scraper.js";
 import { saveRun } from "../store/run-store.js";
@@ -38,6 +40,21 @@ export function registerGenerateDesign(server: McpServer): void {
           content: [{ type: "text", text: JSON.stringify({ error: "url is required when mode is specified" }) }],
           isError: true,
         };
+      }
+
+      if (isHostedMode()) {
+        try {
+          const result = await hostedGenerateDesign({ prompt, repo_context, viewport, mode, url });
+          return {
+            content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+          };
+        } catch (e: unknown) {
+          const message = e instanceof Error ? e.message : "Unknown error";
+          return {
+            content: [{ type: "text", text: JSON.stringify({ error: message }) }],
+            isError: true,
+          };
+        }
       }
 
       let referenceContext: string | undefined;

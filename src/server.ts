@@ -6,6 +6,8 @@ import { registerGenerateDesign } from "./tools/generate-ui.js";
 import { registerRefineDesign } from "./tools/refine-ui.js";
 import { registerPreview } from "./tools/preview.js";
 import { registerAdopt } from "./tools/adopt.js";
+import { registerWhoami } from "./tools/whoami.js";
+import { registerCreditStatus } from "./tools/credit-status.js";
 
 export async function startServer(): Promise<void> {
   const server = new McpServer({
@@ -17,6 +19,8 @@ export async function startServer(): Promise<void> {
   registerRefineDesign(server);
   registerPreview(server);
   registerAdopt(server);
+  registerWhoami(server);
+  registerCreditStatus(server);
 
   const transportMode = process.env["SHITSURAI_TRANSPORT"];
 

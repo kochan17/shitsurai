@@ -1,6 +1,8 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { generateHTML } from "../llm/client.js";
+import { hostedRefineDesign } from "../llm/hosted-client.js";
+import { isHostedMode } from "../auth/token-store.js";
 import { REFINE_SYSTEM_PROMPT, buildRefinePrompt } from "../prompts/refine.js";
 import { scrapeUrl } from "../scraper/url-scraper.js";
 import { getRun, saveRun } from "../store/run-store.js";
@@ -45,6 +47,21 @@ export function registerRefineDesign(server: McpServer): void {
           content: [{ type: "text", text: JSON.stringify({ error: "url is required when mode is specified" }) }],
           isError: true,
         };
+      }
+
+      if (isHostedMode()) {
+        try {
+          const result = await hostedRefineDesign({ run_id_or_html, feedback, repo_context, viewport, mode, url });
+          return {
+            content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+          };
+        } catch (e: unknown) {
+          const message = e instanceof Error ? e.message : "Unknown error";
+          return {
+            content: [{ type: "text", text: JSON.stringify({ error: message }) }],
+            isError: true,
+          };
+        }
       }
 
       let html: string;

@@ -3,7 +3,10 @@
 import { existsSync, mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { exec } from "node:child_process";
+import { platform } from "node:os";
 import { scanRepo } from "./scanner/repo-scanner.js";
+import { saveAuth, loadAuth, clearAuth, getBaseUrl } from "./auth/token-store.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -267,6 +270,123 @@ async function cmdAdopt(args: CliArgs): Promise<void> {
   console.log(guide);
 }
 
+const DEFAULT_BASE_URL = "https://shitsurai-backend.workers.dev";
+
+function openBrowser(url: string): void {
+  const cmd = platform() === "darwin" ? "open" : platform() === "win32" ? "start" : "xdg-open";
+  exec(`${cmd} "${url}"`, (err) => {
+    if (err) {
+      console.log(`Please open: ${url}`);
+    }
+  });
+}
+
+async function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+interface StartLoginResponse {
+  code: string;
+  state: string;
+  auth_url: string;
+}
+
+interface PollResponse {
+  status: "pending" | "complete";
+  token?: string;
+  user_id?: string;
+  email?: string;
+}
+
+async function cmdLogin(args: CliArgs): Promise<void> {
+  const baseUrlArg = typeof args["base-url"] === "string" ? args["base-url"] : undefined;
+  const baseUrl = baseUrlArg ?? getBaseUrl() ?? DEFAULT_BASE_URL;
+
+  console.log(`Starting login flow against ${baseUrl}...`);
+
+  const startRes = await fetch(`${baseUrl}/auth/cli/start`, { method: "POST" });
+  if (!startRes.ok) {
+    console.error(`Failed to start login: ${startRes.status}`);
+    process.exit(1);
+  }
+  const startData = (await startRes.json()) as StartLoginResponse;
+
+  console.log(`Opening browser for authentication...`);
+  console.log(`If the browser does not open, visit: ${startData.auth_url}`);
+  openBrowser(startData.auth_url);
+
+  console.log(`Waiting for login to complete...`);
+
+  const maxAttempts = 60;
+  for (let i = 0; i < maxAttempts; i++) {
+    await sleep(2000);
+    const pollRes = await fetch(`${baseUrl}/auth/cli/poll?code=${encodeURIComponent(startData.code)}`);
+    if (!pollRes.ok) {
+      continue;
+    }
+    const pollData = (await pollRes.json()) as PollResponse;
+    if (pollData.status === "complete" && pollData.token !== undefined) {
+      saveAuth({
+        token: pollData.token,
+        user_id: pollData.user_id,
+        email: pollData.email,
+        baseUrl,
+      });
+      console.log(`✓ Logged in as ${pollData.email ?? pollData.user_id ?? "user"}`);
+      return;
+    }
+  }
+
+  console.error("Login timed out after 2 minutes");
+  process.exit(1);
+}
+
+function cmdLogout(): void {
+  const auth = loadAuth();
+  if (auth === undefined) {
+    console.log("Not logged in");
+    return;
+  }
+  clearAuth();
+  console.log("Logged out");
+}
+
+async function cmdSubscribe(args: CliArgs): Promise<void> {
+  const auth = loadAuth();
+  if (auth === undefined) {
+    console.error("Not logged in. Run: shitsurai login");
+    process.exit(1);
+  }
+
+  const plan = typeof args["plan"] === "string" ? args["plan"] : "pro";
+  if (plan !== "pro" && plan !== "team") {
+    console.error(`Invalid plan: ${plan}. Must be "pro" or "team".`);
+    process.exit(1);
+  }
+
+  const baseUrl = auth.baseUrl ?? DEFAULT_BASE_URL;
+
+  const res = await fetch(`${baseUrl}/api/v1/stripe/checkout`, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${auth.token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ plan }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    console.error(`Failed to create checkout: ${res.status} ${text}`);
+    process.exit(1);
+  }
+
+  const data = (await res.json()) as { url: string };
+  console.log(`Opening Stripe Checkout...`);
+  console.log(`If the browser does not open, visit: ${data.url}`);
+  openBrowser(data.url);
+}
+
 function cmdHelp(): void {
   console.log(`shitsurai — Self-hosted design generation MCP server
 
@@ -281,6 +401,9 @@ Commands:
   preview --id <run-id>             Render a PNG preview
   adopt --id <run-id>               Generate framework adoption guide
     [--framework react|vue|nextjs|svelte]
+  login [--base-url <url>]          Log in via browser (OAuth)
+  logout                            Log out and remove stored token
+  subscribe [--plan pro|team]       Open Stripe checkout to subscribe
 
 Environment:
   ANTHROPIC_API_KEY                 Required for LLM calls
@@ -310,6 +433,15 @@ async function main(): Promise<void> {
       break;
     case "adopt":
       await cmdAdopt(args);
+      break;
+    case "login":
+      await cmdLogin(args);
+      break;
+    case "logout":
+      cmdLogout();
+      break;
+    case "subscribe":
+      await cmdSubscribe(args);
       break;
     case "help":
     case "--help":
